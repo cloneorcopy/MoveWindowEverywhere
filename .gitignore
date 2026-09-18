@@ -1,0 +1,30 @@
+# 构建产物
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+publish/
+artifacts/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+.vs/
+.vscode/
+.idea/
+
+# 依赖缓存
+packages/
+*.nupkg
+
+# 运行时生成
+*.log
+*.tmp
+project.lock.json
+project.fragment.lock.json
+
+# 操作系统
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+.DS_Store

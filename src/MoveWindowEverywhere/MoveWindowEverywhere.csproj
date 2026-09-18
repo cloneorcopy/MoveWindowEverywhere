@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <PlatformTarget>x64</PlatformTarget>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <ApplicationManifest>Resources\app.manifest</ApplicationManifest>
+    <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
+    <RootNamespace>MoveWindowEverywhere</RootNamespace>
+    <AssemblyName>MoveWindowEverywhere</AssemblyName>
+    <Product>Move Window Everywhere</Product>
+    <Company>Move Window Everywhere</Company>
+    <Version>1.0.0</Version>
+    <FileVersion>1.0.0.0</FileVersion>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+    <IsPackable>false</IsPackable>
+    <!-- WFAC010：应用清单中的 dpiAwareness 与 ApplicationHighDpiMode 属性同时声明 PerMonitorV2，二者一致，属预期 -->
+    <NoWarn>$(NoWarn);CA1416;WFAC010</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="Resources\app.manifest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- 单元测试需要直接验证原生层（隐藏消息窗口、消息投递），因此开放内部可见性 -->
+    <InternalsVisibleTo Include="MoveWindowEverywhere.Tests" />
+  </ItemGroup>
+
+</Project>
