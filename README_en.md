@@ -80,7 +80,7 @@ Right-click the tray icon to access:
 - **Keyboard & Mouse Navigation**: `↑` / `↓` to navigate, `Enter` to confirm, `Esc` to cancel. Single-click to select, double-click to confirm.
 - **Auto-Dismiss**: By default, closing on focus lost prevents the selector from cluttering your workspace (configurable via `CloseSelectorOnFocusLost`).
 - **Self-Exclusion**: The selector itself never appears in the candidate list.
-- **Fresh Enumeration**: Re-enumerates top-level windows each time it is opened.
+- **Fresh, Two-Stage Enumeration**: Re-enumerates top-level windows each time it is opened. Cheap in-process queries decide which windows qualify first, and the two expensive fields (process name, window icon) are then fetched only for the survivors, so opening the list does not pay for the thousand-plus top-level handles that never make it in.
 
 **Search Matching Hierarchy** (Case-insensitive, multi-keyword split by space, all keywords must match):
 1. Title starts with keyword (Highest priority)

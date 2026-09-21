@@ -20,7 +20,11 @@ public sealed class WindowInfo
 
     public uint ProcessId { get; init; }
 
-    public string ProcessName { get; init; } = "未知进程";
+    /// <summary>
+    /// 进程名。读取要打开进程句柄，属于昂贵字段，由 <c>WindowEnumerator</c> 在过滤之后
+    /// 只为进入列表的窗口补全；在此之前保持默认值。
+    /// </summary>
+    public string ProcessName { get; internal set; } = "未知进程";
 
     public string ClassName { get; init; } = string.Empty;
 
@@ -40,8 +44,11 @@ public sealed class WindowInfo
 
     public long ExtendedStyle { get; init; }
 
-    /// <summary>窗口图标句柄，UI 层按需转换为 <c>ImageSource</c>。</summary>
-    public IntPtr IconHandle { get; init; }
+    /// <summary>
+    /// 窗口图标句柄，UI 层按需转换为 <c>ImageSource</c>。
+    /// 取它要向目标窗口发消息，属于昂贵字段，与 <see cref="ProcessName"/> 同样在过滤之后补全。
+    /// </summary>
+    public IntPtr IconHandle { get; internal set; }
 
     /// <summary>
     /// 窗口当前所在显示器的编号，从 1 开始。0 表示未标注。

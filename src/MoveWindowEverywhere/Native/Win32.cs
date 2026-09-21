@@ -42,6 +42,9 @@ internal static partial class Win32
     public const int ICON_BIG = 1;
     public const int ICON_SMALL2 = 2;
 
+    /// <summary>向窗口索取图标时的单次超时（毫秒）。见 <see cref="SendMessageQuery"/> 的说明。</summary>
+    public const uint IconQueryTimeoutMs = 30;
+
     // ---------------- ShowWindow / SetWindowPos ----------------
     public const int SW_HIDE = 0;
     public const int SW_SHOWNOACTIVATE = 4;
@@ -226,7 +229,14 @@ internal static partial class Win32
     /// 会导致整个程序界面冻结（选择器出不来、托盘菜单点不动）。
     /// SMTO_ABORTIFHUNG 会让系统对已标记为未响应的窗口直接返回，不再等待。
     /// </summary>
-    public static IntPtr SendMessageQuery(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam, uint timeoutMilliseconds = 120)
+    /// <remarks>
+    /// 默认超时 30 ms 是按「最坏情况要可接受」定的，而不是按正常返回时间定的：
+    /// 健康的窗口处理这类查询只用微秒级，超时只对线程正忙却又没被判为未响应的窗口生效。
+    /// 原来取 120 ms，配合三层图标探测，单个这类窗口就能占掉 360 ms，
+    /// 日志里出现过一次 10 秒的卡顿就是这么攒出来的。
+    /// 超时截断的代价仅是拿不到窗口自设的图标、退回窗口类图标显示，不影响功能。
+    /// </remarks>
+    public static IntPtr SendMessageQuery(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam, uint timeoutMilliseconds = IconQueryTimeoutMs)
     {
         SendMessageTimeout(
             hWnd,

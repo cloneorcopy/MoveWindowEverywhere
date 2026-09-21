@@ -258,9 +258,11 @@ public partial class App : System.Windows.Application
                     IncludeMinimizedWindows = _settings.IncludeMinimizedWindows,
                 };
 
-                // 枚举耗时单独记录：若某次明显偏长，说明遇到了无响应的窗口
+                // 枚举耗时单独记录：若某次明显偏长，说明遇到了无响应的窗口。
+                // 交给枚举器的是过滤策略本身：它先做零成本探测淘汰，再只为进入列表的窗口
+                // 补进程名和图标，避免把贵字段摊到系统里一千多个顶层句柄上。
                 var stopwatch = Stopwatch.StartNew();
-                IReadOnlyList<WindowInfo> windows = new WindowFilterPolicy(options).Apply(_windowEnumerator.Enumerate());
+                IReadOnlyList<WindowInfo> windows = _windowEnumerator.Enumerate(new WindowFilterPolicy(options));
                 stopwatch.Stop();
 
                 // 标注每个窗口所在显示器，便于在选择器里分辨哪些窗口在别的屏上
