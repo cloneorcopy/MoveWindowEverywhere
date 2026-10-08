@@ -62,6 +62,10 @@
 - **Multi-level per-window history**: Moving the same window repeatedly creates multiple restore layers. Each restore pops one layer, so that window remains available until its history is exhausted.
 - **Session-only history**: Restore data is deliberately not persisted across app restarts, avoiding unsafe restoration after Windows reuses an `HWND`.
 - **Full placement restore**: Restore uses native `WINDOWPLACEMENT`, so position, dimensions, and normal/maximized/minimized state are restored together.
+- **Maximized window restore**: Restoring a maximized window first places its normal rectangle, then reapplies maximized state so Windows can choose the original monitor.
+- **Borderless fullscreen**: Windows covering an entire monitor are moved using the full monitor bounds, not the taskbar-adjusted work area; restore also reapplies the prior physical bounds if the original display is still available.
+- **Thumbnail fixes**: GDI BI_RGB screenshots are displayed as opaque pixels instead of interpreting the unused alpha byte as transparency; a black primary capture triggers a compatibility retry.
+- **Limits**: Exclusive-fullscreen games, DRM-protected surfaces, and apps that override Windows positioning may still resist capture or relocation.
 
 ---
 

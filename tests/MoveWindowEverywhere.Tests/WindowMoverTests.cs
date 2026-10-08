@@ -157,6 +157,110 @@ public sealed class WindowMoverTests
         });
     }
 
+    [Fact]
+    public void 最大化窗口跨屏移动后应恢复原显示器和原始普通尺寸()
+    {
+        var monitorService = new MonitorService(new AppLogger());
+        IReadOnlyList<MonitorInfo> monitors = monitorService.GetMonitors();
+        MonitorInfo? primary = monitorService.GetPrimaryMonitor();
+        Assert.NotNull(primary);
+
+        RunOnStaThread(() =>
+        {
+            using var form = new Form
+            {
+                Text = "MoveWindowEverywhere 最大化恢复测试窗口",
+                StartPosition = FormStartPosition.Manual,
+                Bounds = new System.Drawing.Rectangle(
+                    (int)primary.WorkRect.Left + 65, (int)primary.WorkRect.Top + 75, 620, 430),
+                ShowInTaskbar = false,
+            };
+            form.Show();
+            form.WindowState = FormWindowState.Maximized;
+            Assert.True(Win32.IsZoomed(form.Handle));
+
+            WINDOWPLACEMENT original = GetPlacement(form.Handle);
+            IntPtr originalMonitor = Win32.MonitorFromWindow(
+                form.Handle, Win32.MONITOR_DEFAULTTONEAREST);
+            MonitorInfo destination = monitors.FirstOrDefault(m => m.Handle != originalMonitor) ?? primary;
+            var mover = CreateMover();
+
+            WindowMoveResult move = mover.MoveToMonitor(form.Handle, destination);
+            Assert.True(move.Success, move.Message);
+
+            WindowMoveResult restore = mover.RestorePrevious(form.Handle);
+            Assert.True(restore.Success, restore.Message);
+            Assert.True(Win32.IsZoomed(form.Handle));
+            Assert.Equal(originalMonitor, Win32.MonitorFromWindow(
+                form.Handle, Win32.MONITOR_DEFAULTTONEAREST));
+            AssertSamePlacement(original, GetPlacement(form.Handle));
+        });
+    }
+
+    [Fact]
+    public void 无边框全屏矩形应识别为覆盖完整显示器()
+    {
+        var monitor = new RECT { Left = -1920, Top = 0, Right = 0, Bottom = 1080 };
+        var full = new RECT { Left = -1920, Top = 0, Right = 0, Bottom = 1080 };
+        var partial = new RECT { Left = -1920, Top = 0, Right = 0, Bottom = 1040 };
+
+        Assert.True(WindowMover.CoversMonitor(full, monitor));
+        Assert.False(WindowMover.CoversMonitor(partial, monitor));
+    }
+
+    [Fact]
+    public void 无边框全屏窗口移动和恢复时应保留完整显示器尺寸()
+    {
+        var monitorService = new MonitorService(new AppLogger());
+        MonitorInfo? monitor = monitorService.GetPrimaryMonitor();
+        Assert.NotNull(monitor);
+
+        RunOnStaThread(() =>
+        {
+            using var form = new Form
+            {
+                Text = "MoveWindowEverywhere 无边框全屏测试窗口",
+                FormBorderStyle = FormBorderStyle.None,
+                StartPosition = FormStartPosition.Manual,
+                Bounds = new System.Drawing.Rectangle(
+                    (int)monitor.MonitorRect.Left, (int)monitor.MonitorRect.Top,
+                    (int)monitor.MonitorRect.Width, (int)monitor.MonitorRect.Height),
+                ShowInTaskbar = false,
+            };
+            _ = form.Handle;
+            // Form initialization may clamp a nominally fullscreen window to the
+            // taskbar-adjusted work area. Set the HWND rectangle explicitly.
+            Assert.True(Win32.SetWindowPos(form.Handle, IntPtr.Zero,
+                (int)monitor.MonitorRect.Left, (int)monitor.MonitorRect.Top,
+                (int)monitor.MonitorRect.Width, (int)monitor.MonitorRect.Height,
+                Win32.SWP_NOZORDER | Win32.SWP_NOACTIVATE | Win32.SWP_FRAMECHANGED));
+            Assert.True(Win32.GetWindowRect(form.Handle, out RECT originalBounds));
+            Assert.True(WindowMover.CoversMonitor(originalBounds, new RECT
+            {
+                Left = (int)monitor.MonitorRect.Left,
+                Top = (int)monitor.MonitorRect.Top,
+                Right = (int)monitor.MonitorRect.Right,
+                Bottom = (int)monitor.MonitorRect.Bottom,
+            }));
+
+            var mover = CreateMover();
+            WindowMoveResult move = mover.MoveToMonitor(form.Handle, monitor);
+            Assert.True(move.Success, move.Message);
+            Assert.True(Win32.GetWindowRect(form.Handle, out RECT movedBounds));
+            Assert.Equal((int)monitor.MonitorRect.Height, movedBounds.Height);
+
+            form.Bounds = new System.Drawing.Rectangle(
+                (int)monitor.WorkRect.Left + 60, (int)monitor.WorkRect.Top + 80, 700, 500);
+            WindowMoveResult restore = mover.RestorePrevious(form.Handle);
+            Assert.True(restore.Success, restore.Message);
+            Assert.True(Win32.GetWindowRect(form.Handle, out RECT restoredBounds));
+            Assert.Equal(originalBounds.Left, restoredBounds.Left);
+            Assert.Equal(originalBounds.Top, restoredBounds.Top);
+            Assert.Equal(originalBounds.Width, restoredBounds.Width);
+            Assert.Equal(originalBounds.Height, restoredBounds.Height);
+        });
+    }
+
     private static WINDOWPLACEMENT GetPlacement(IntPtr handle)
     {
         var placement = new WINDOWPLACEMENT

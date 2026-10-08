@@ -104,11 +104,15 @@ public sealed class WindowThumbnailService
 
             captureOldBitmap = Win32.SelectObject(captureDc, captureBitmap);
 
-            if (!Win32.PrintWindow(windowHandle, captureDc, Win32.PW_RENDERFULLCONTENT))
+            // Some windows return TRUE but paint a black buffer for PW_RENDERFULLCONTENT.
+            // Retry without the flag in that case instead of silently showing "no preview".
+            if (!Win32.PrintWindow(windowHandle, captureDc, Win32.PW_RENDERFULLCONTENT)
+                || IsBlank(captureBits, captureWidth * captureHeight))
             {
-                // 一部分老程序不认 PW_RENDERFULLCONTENT，退回最基础的调用方式再试一次
-                if (!Win32.PrintWindow(windowHandle, captureDc, 0))
+                if (!Win32.PrintWindow(windowHandle, captureDc, 0)
+                    || IsBlank(captureBits, captureWidth * captureHeight))
                 {
+                    _logger?.Warn($"窗口 0x{windowHandle.ToInt64():X} 未提供可用截图（PrintWindow 返回空白）");
                     return null;
                 }
             }
@@ -151,21 +155,7 @@ public sealed class WindowThumbnailService
                 return null;
             }
 
-            int stride = targetWidth * 4;
-            BitmapSource source = BitmapSource.Create(
-                targetWidth,
-                targetHeight,
-                96,
-                96,
-                PixelFormats.Bgra32,
-                null,
-                thumbBits,
-                stride * targetHeight,
-                stride);
-
-            // Freeze 之后才能安全地从后台线程转交给 UI 线程
-            source.Freeze();
-            return source;
+            return CreateOpaqueThumbnail(thumbBits, targetWidth, targetHeight);
         }
         catch (Exception ex)
         {
@@ -209,6 +199,21 @@ public sealed class WindowThumbnailService
                 Win32.ReleaseDC(IntPtr.Zero, screenDc);
             }
         }
+    }
+
+    /// <summary>
+    /// Windows GDI's 32-bit BI_RGB DIB often leaves alpha at zero even when RGB is valid.
+    /// Bgra32 therefore makes an otherwise correct screenshot fully transparent in WPF.
+    /// Bgr32 treats the unused fourth byte as padding and always displays the RGB pixels.
+    /// </summary>
+    internal static BitmapSource CreateOpaqueThumbnail(IntPtr bits, int width, int height)
+    {
+        int stride = checked(width * 4);
+        BitmapSource source = BitmapSource.Create(
+            width, height, 96, 96, PixelFormats.Bgr32, null,
+            bits, checked(stride * height), stride);
+        source.Freeze();
+        return source;
     }
 
     /// <summary>

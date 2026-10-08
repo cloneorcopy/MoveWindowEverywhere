@@ -33,6 +33,8 @@ internal static partial class Win32
     public const long WS_MINIMIZE = 0x20000000L;
     public const long WS_MAXIMIZE = 0x01000000L;
     public const long WS_VISIBLE = 0x10000000L;
+    public const long WS_POPUP = 0x80000000L;
+    public const long WS_CAPTION = 0x00C00000L;
     public const long WS_CHILD = 0x40000000L;
     public const long WS_EX_TOOLWINDOW = 0x00000080L;
     public const long WS_EX_APPWINDOW = 0x00040000L;
@@ -50,6 +52,8 @@ internal static partial class Win32
     public const int SW_SHOWNOACTIVATE = 4;
     public const int SW_MAXIMIZE = 3;
     public const int SW_RESTORE = 9;
+    public const int SW_SHOWNORMAL = 1;
+    public const uint WPF_RESTORETOMAXIMIZED = 0x0002;
 
     public const uint SWP_NOSIZE = 0x0001;
     public const uint SWP_NOMOVE = 0x0002;
